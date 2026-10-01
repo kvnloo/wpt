@@ -1144,7 +1144,7 @@ usb_test(() => {
         let data = new DataView(new ArrayBuffer(64 * 8));
         for (let i = 0; i < 8; ++i) {
           for (let j = 0; j < 64; ++j)
-            data.setUint8(i * j, j & 0xff);
+            data.setUint8(i * 64 + j, j & 0xff);
         }
         return device.isochronousTransferOut(
             1, data, [64, 64, 64, 64, 64, 64, 64, 64]);
@@ -1174,7 +1174,7 @@ usb_test((t) => {
         let data = new DataView(new ArrayBuffer(64 * 8));
         for (let i = 0; i < 8; ++i) {
           for (let j = 0; j < 64; ++j)
-            data.setUint8(i * j, j & 0xff);
+            data.setUint8(i * 64 + j, j & 0xff);
         }
         return waitForDisconnect(fakeDevice)
             .then(
