@@ -57,6 +57,7 @@
         string_tests.add(index);
 
         const string_values = new Set();
+        let completed_languages = 0;
         const decoder = new TextDecoder('utf-16le');
 
         for (const language of string_languages) {
@@ -64,7 +65,8 @@
           manual_usb_subtest(async (t) => {
             if (expected != undefined) {
               t.add_cleanup(() => {
-                if (string_values.size == string_languages.length) {
+                completed_languages++;
+                if (completed_languages == string_languages.length) {
                   assert_true(string_values.has(expected));
                 }
               });
