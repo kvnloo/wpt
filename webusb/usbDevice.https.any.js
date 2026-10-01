@@ -649,7 +649,7 @@ usb_test(async () => {
         assert_true(result instanceof USBOutTransferResult);
         assert_equals(result.status, 'ok');
         assert_equals(result.bytesWritten, 8);
-      }).push((async () => {
+      }).concat((async () => {
         let result = await device.controlTransferOut(transferParams);
         assert_true(result instanceof USBOutTransferResult);
         assert_equals(result.status, 'ok');
@@ -682,7 +682,7 @@ usb_test(async (t) => {
                 t, 'InvalidStateError',
                 device.controlTransferOut(transferParams, data));
           })
-          .push(promise_rejects_dom(
+          .concat(promise_rejects_dom(
               t, 'InvalidStateError',
               device.controlTransferOut(transferParams)));
     });
@@ -715,7 +715,7 @@ usb_test(async (t) => {
             return promise_rejects_dom(
                 t, error, device.controlTransferOut(transferParams, data));
           })
-          .push(promise_rejects_dom(
+          .concat(promise_rejects_dom(
               t, error, device.controlTransferOut(transferParams)));
     });
   }));
