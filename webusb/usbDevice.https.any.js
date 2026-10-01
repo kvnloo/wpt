@@ -1274,6 +1274,30 @@ usb_test(async (t) => {
   await device.selectConfiguration(2);
   await device.claimInterface(0);
   await device.selectAlternateInterface(0, 1);
+  const packetLengths = [0xffffffff, 1];
+  await promise_rejects_dom(
+      t, 'DataError', device.isochronousTransferIn(1, packetLengths));
+}, 'isochronousTransferIn rejects when packet lengths overflow');
+
+usb_test(async (t) => {
+  const {device} = await getFakeDevice();
+  await device.open();
+  await device.selectConfiguration(2);
+  await device.claimInterface(0);
+  await device.selectAlternateInterface(0, 1);
+  const buffer = new Uint8Array(0);
+  const packetLengths = [0xffffffff, 1];
+  await promise_rejects_dom(
+      t, 'DataError',
+      device.isochronousTransferOut(1, buffer, packetLengths));
+}, 'isochronousTransferOut rejects when packet lengths overflow');
+
+usb_test(async (t) => {
+  const {device} = await getFakeDevice();
+  await device.open();
+  await device.selectConfiguration(2);
+  await device.claimInterface(0);
+  await device.selectAlternateInterface(0, 1);
   const packetLengths = [33554432, 1];
   await promise_rejects_dom(
       t, 'DataError', device.isochronousTransferIn(1, packetLengths));
