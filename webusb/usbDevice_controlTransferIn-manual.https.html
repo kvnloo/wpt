@@ -163,18 +163,13 @@
                       endpoint.packetSize, 'packet size');
       }
 
-      function read_config_descriptor(config_value) {
+      function read_config_descriptor(config_index) {
         manual_usb_subtest(async (t) => {
-          const configuration = device.configurations.find((config) => {
-            return config.configurationValue == config_value;
-          });
-          assert_not_equals(configuration, undefined);
-
           let result = await device.controlTransferIn({
             requestType: 'standard',
             recipient: 'device',
             request: kGetDescriptorRequest,
-            value: kConfigurationDescriptorType << 8 | (config_value - 1),
+            value: kConfigurationDescriptorType << 8 | config_index,
             index: 0
           }, kConfigurationDescriptorLength);
 
@@ -189,7 +184,7 @@
             requestType: 'standard',
             recipient: 'device',
             request: kGetDescriptorRequest,
-            value: kConfigurationDescriptorType << 8 | (config_value - 1),
+            value: kConfigurationDescriptorType << 8 | config_index,
             index: 0
           }, total_length);
 
@@ -201,11 +196,14 @@
                         'descriptor type');
           assert_equals(result.data.getUint16(2, /*littleEndian=*/true),
                         total_length, 'total length');
+          const configuration = device.configurations[config_index];
+          assert_not_equals(configuration, undefined);
           assert_equals(
               result.data.getUint8(4), configuration.interfaces.length,
               'number of interfaces');
           assert_equals(
-              result.data.getUint8(5), config_value, 'configuration value');
+              result.data.getUint8(5), configuration.configurationValue,
+              'configuration value');
 
           const configuration_string = result.data.getUint8(6);
           if (configuration_string != 0) {
@@ -238,7 +236,7 @@
 
             offset += length;
           }
-        }, `Read config descriptor ${config_value}`);
+        }, `Read config descriptor ${config_index}`);
       }
 
       function read_string_descriptor_languages(device_descriptor) {
@@ -283,9 +281,9 @@
           }
 
           const num_configurations = device_descriptor.getUint8(17);
-          for (let config_value = 1; config_value <= num_configurations;
-               ++config_value) {
-            read_config_descriptor(config_value);
+          for (let config_index = 0; config_index < num_configurations;
+               ++config_index) {
+            read_config_descriptor(config_index);
           }
         }, `Read supported languages`);
       }
