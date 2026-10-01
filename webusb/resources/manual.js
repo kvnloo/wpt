@@ -49,16 +49,25 @@ function manual_usb_serial_test(func, name, properties) {
 
     const configuration = device.configurations.find((config) => {
       const hasControlInterface = config.interfaces.some((iface) => {
-        const alternate = iface.alternates[0];
-        return alternate.interfaceClass == 2 &&
-               alternate.interfaceSubclass == 2 &&
-               alternate.interfaceProtocol == 0;
+        return iface.alternates.some((alternate) => {
+          return alternate.interfaceClass == 2 &&
+                 alternate.interfaceSubclass == 2 &&
+                 alternate.interfaceProtocol == 0;
+        });
       });
       const hasDataInterface = config.interfaces.some((iface) => {
-        const alternate = iface.alternates[0];
-        return alternate.interfaceClass == 10 &&
-               alternate.interfaceSubclass == 0 &&
-               alternate.interfaceProtocol == 0;
+        return iface.alternates.some((alternate) => {
+          const hasInEndpoint = alternate.endpoints.some((endpoint) => {
+            return endpoint.type == 'bulk' && endpoint.direction == 'in';
+          });
+          const hasOutEndpoint = alternate.endpoints.some((endpoint) => {
+            return endpoint.type == 'bulk' && endpoint.direction == 'out';
+          });
+          return alternate.interfaceClass == 10 &&
+                 alternate.interfaceSubclass == 0 &&
+                 alternate.interfaceProtocol == 0 &&
+                 hasInEndpoint && hasOutEndpoint;
+        });
       });
       return hasControlInterface && hasDataInterface;
     });
@@ -68,10 +77,11 @@ function manual_usb_serial_test(func, name, properties) {
 
     let controlInterface = undefined;
     for (const iface of device.configuration.interfaces) {
-      const alternate = iface.alternates[0];
-      if (alternate.interfaceClass == 2 &&
-          alternate.interfaceSubclass == 2 &&
-          alternate.interfaceProtocol == 0) {
+      if (iface.alternates.some((alternate) => {
+            return alternate.interfaceClass == 2 &&
+                   alternate.interfaceSubclass == 2 &&
+                   alternate.interfaceProtocol == 0;
+          })) {
         controlInterface = iface;
         break;
       }
@@ -80,19 +90,36 @@ function manual_usb_serial_test(func, name, properties) {
                       'No control interface found.');
 
     let dataInterface = undefined;
+    let dataAlternate = undefined;
     for (const iface of device.configuration.interfaces) {
-      const alternate = iface.alternates[0];
-      if (alternate.interfaceClass == 10 &&
-          alternate.interfaceSubclass == 0 &&
-          alternate.interfaceProtocol == 0) {
+      const alternate = iface.alternates.find((alternate) => {
+        const hasInEndpoint = alternate.endpoints.some((endpoint) => {
+          return endpoint.type == 'bulk' && endpoint.direction == 'in';
+        });
+        const hasOutEndpoint = alternate.endpoints.some((endpoint) => {
+          return endpoint.type == 'bulk' && endpoint.direction == 'out';
+        });
+        return alternate.interfaceClass == 10 &&
+               alternate.interfaceSubclass == 0 &&
+               alternate.interfaceProtocol == 0 &&
+               hasInEndpoint && hasOutEndpoint;
+      });
+      if (alternate != undefined) {
         dataInterface = iface;
+        dataAlternate = alternate;
         break;
       }
     }
     assert_not_equals(dataInterface, undefined, 'No data interface found.');
+    assert_not_equals(dataAlternate, undefined, 'No data alternate found.');
 
     await device.claimInterface(controlInterface.interfaceNumber);
     await device.claimInterface(dataInterface.interfaceNumber);
+    if (dataInterface.alternate.alternateSetting !=
+        dataAlternate.alternateSetting) {
+      await device.selectAlternateInterface(
+          dataInterface.interfaceNumber, dataAlternate.alternateSetting);
+    }
 
     let inEndpoint = undefined;
     for (const endpoint of dataInterface.alternate.endpoints) {
