@@ -22,7 +22,9 @@
           await device.close();
         });
 
-        await device.selectConfiguration(1);
+        const configuration = device.configurations[0];
+        assert_not_equals(configuration, undefined, 'No configurations found.');
+        await device.selectConfiguration(configuration.configurationValue);
 
         const promises = [];
         for (const iface of device.configuration.interfaces) {
