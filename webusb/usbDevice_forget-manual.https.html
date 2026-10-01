@@ -14,13 +14,14 @@
     <script>
       manual_usb_test(async (t, device) => {
         const devicesBeforeForget = await navigator.usb.getDevices();
-        assert_equals(devicesBeforeForget.length, 1);
-        assert_equals(devicesBeforeForget[0], device);
+        assert_true(devicesBeforeForget.includes(device));
 
         await device.forget();
 
         const devicesAfterForget = await navigator.usb.getDevices();
-        assert_equals(devicesAfterForget.length, 0);
+        assert_false(devicesAfterForget.includes(device));
+        assert_equals(
+            devicesAfterForget.length, devicesBeforeForget.length - 1);
       }, 'forget() removes the device from getDevices()');
     </script>
   </body>
