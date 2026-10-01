@@ -47,7 +47,24 @@ function manual_usb_serial_test(func, name, properties) {
       }
     });
 
-    await device.selectConfiguration(1);
+    const configuration = device.configurations.find((config) => {
+      const hasControlInterface = config.interfaces.some((iface) => {
+        const alternate = iface.alternates[0];
+        return alternate.interfaceClass == 2 &&
+               alternate.interfaceSubclass == 2 &&
+               alternate.interfaceProtocol == 0;
+      });
+      const hasDataInterface = config.interfaces.some((iface) => {
+        const alternate = iface.alternates[0];
+        return alternate.interfaceClass == 10 &&
+               alternate.interfaceSubclass == 0 &&
+               alternate.interfaceProtocol == 0;
+      });
+      return hasControlInterface && hasDataInterface;
+    });
+    assert_not_equals(
+        configuration, undefined, 'No CDC-ACM configuration found.');
+    await device.selectConfiguration(configuration.configurationValue);
 
     let controlInterface = undefined;
     for (const iface of device.configuration.interfaces) {
